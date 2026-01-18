@@ -4,7 +4,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: transmission-default
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -93,7 +93,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: transmission
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -110,7 +110,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: transmission-app
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/component: grafana-dashboard
     app.kubernetes.io/instance: transmission
@@ -5522,7 +5522,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: transmission-config
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5544,7 +5544,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: transmission-http
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5569,7 +5569,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: transmission-metrics
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5594,7 +5594,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: transmission
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5840,7 +5840,7 @@ apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: transmission-homeassistant
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5870,7 +5870,7 @@ apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: transmission-ingress
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5900,7 +5900,7 @@ apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: transmission-media-services
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5931,7 +5931,7 @@ apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: transmission-prometheus
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5961,7 +5961,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: transmission
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -5991,7 +5991,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: transmission-route
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -6027,7 +6027,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: transmission-http-redirect
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -6062,7 +6062,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: transmission
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
@@ -6226,7 +6226,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: transmission
-  namespace: default
+  namespace: download-clients
   labels:
     app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
