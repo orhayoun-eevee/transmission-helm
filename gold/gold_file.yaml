@@ -1,0 +1,6268 @@
+---
+# Source: transmission/charts/app-chart/templates/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: transmission-default
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "network-policy"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: transmission
+      app.kubernetes.io/name: transmission
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: istio-system
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: shared-platform-gateway
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: monitoring
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: media-center
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/part-of: media-center
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: homeassistant
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: home-assistant
+      ports:
+      - port: 15008
+        protocol: TCP
+  egress:
+    - ports:
+      - port: 53
+        protocol: UDP
+      - port: 53
+        protocol: TCP
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+    - ports:
+      - port: 15008
+        protocol: TCP
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: istio-system
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: download-clients
+    - ports:
+      - port: 443
+        protocol: TCP
+      - port: 51413
+        protocol: TCP
+      - port: 51413
+        protocol: UDP
+      to:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+          except:
+          - 10.42.0.0/16
+          - 10.43.0.0/16
+          - 192.168.0.0/16
+---
+# Source: transmission/charts/app-chart/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: transmission
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "serviceaccount"
+  annotations:
+    app.kubernetes.io/managed-by: argocd
+    description: Transmission media center service account
+automountServiceAccountToken: false
+---
+# Source: transmission/templates/grafana.tpl
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transmission-app
+  namespace: default
+  labels:
+    app.kubernetes.io/component: grafana-dashboard
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    grafana_dashboard: "1"
+    helm.sh/chart: transmission-0.1.0
+data:
+  app: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 99,
+          "panels": [],
+          "title": "Application Health",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "text": "Unhealthy"
+                    },
+                    "1": {
+                      "color": "green",
+                      "text": "Healthy"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 60
+          },
+          "id": 12,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_version{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "System Status",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 56
+          },
+          "id": 13,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_torrents_active{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Active Torrents",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 56
+          },
+          "id": 14,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_torrents_total{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Total Torrents",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 56
+          },
+          "id": 15,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_download_speed_bytes{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Download Speed",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 56
+          },
+          "id": 16,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_upload_speed_bytes{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Upload Speed",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 60
+          },
+          "id": 17,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_torrents_paused{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Torrents Paused",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 60
+          },
+          "id": 1003,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_torrents_active{service=\"$service\", component=\"$component\"} - transmission_session_stats_torrents_paused{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Torrents Active (Not Paused)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 42
+          },
+          "id": 35,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_queue_down{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Stalled Queue Items",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 42
+          },
+          "id": 36,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_torrents_downloading{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Torrents Downloading",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 42
+          },
+          "id": 37,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_torrents_seeding{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Torrents Seeding",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 46
+          },
+          "id": 38,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_queue_up{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Stalled Upload Queue",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 107374182400
+                  },
+                  {
+                    "color": "red",
+                    "value": 10737418240
+                  }
+                ]
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 64
+          },
+          "id": 1005,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_free_space{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Free Disk Space",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 64
+          },
+          "id": 1006,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_cache_size_bytes{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Cache Size",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 64
+          },
+          "id": 24,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_global_peer_limit{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Global Peer Limit",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 64
+          },
+          "id": 1007,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_torrent_peer_limit{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Per-Torrent Peer Limit",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 13
+          },
+          "id": 1004,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_download_speed_bytes{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Download Speed",
+              "refId": "A"
+            }
+          ],
+          "title": "Download Speed Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 60
+          },
+          "id": 20,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_upload_speed_bytes{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Upload Speed",
+              "refId": "A"
+            }
+          ],
+          "title": "Upload Speed Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "id": 21,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_torrents_active{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Active Torrents",
+              "refId": "A"
+            }
+          ],
+          "title": "Active Torrents Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "id": 26,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "increase(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"current\"}[5m])",
+              "legendFormat": "Downloaded (5m)",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}",
+              "legendFormat": "Total Downloaded",
+              "refId": "B"
+            }
+          ],
+          "title": "Downloaded Bytes Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 29
+          },
+          "id": 27,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "increase(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"current\"}[5m])",
+              "legendFormat": "Uploaded (5m)",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}",
+              "legendFormat": "Total Uploaded",
+              "refId": "B"
+            }
+          ],
+          "title": "Uploaded Bytes Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 37
+          },
+          "id": 132,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[7d]))",
+              "refId": "A"
+            }
+          ],
+          "title": "Downloaded Bytes (7d)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 37
+          },
+          "id": 133,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[30d]))",
+              "refId": "A"
+            }
+          ],
+          "title": "Downloaded Bytes (30d)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 37
+          },
+          "id": 134,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[7d]))",
+              "refId": "A"
+            }
+          ],
+          "title": "Uploaded Bytes (7d)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 37
+          },
+          "id": 135,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[30d]))",
+              "refId": "A"
+            }
+          ],
+          "title": "Uploaded Bytes (30d)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 41
+          },
+          "id": 136,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "delta(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[24h])",
+              "refId": "A"
+            }
+          ],
+          "title": "Downloaded Bytes Δ (24h)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 41
+          },
+          "id": 137,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "delta(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[24h])",
+              "refId": "A"
+            }
+          ],
+          "title": "Uploaded Bytes Δ (24h)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 45
+          },
+          "id": 138,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_torrents_downloading{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Torrents Downloading",
+              "refId": "A"
+            }
+          ],
+          "title": "Torrents Downloading Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 45
+          },
+          "id": 139,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_torrents_seeding{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Torrents Seeding",
+              "refId": "A"
+            }
+          ],
+          "title": "Torrents Seeding Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 53
+          },
+          "id": 140,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_queue_down{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Download Queue",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_queue_up{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Upload Queue",
+              "refId": "B"
+            }
+          ],
+          "title": "Queue Size Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 29
+          },
+          "id": 28,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_free_space{service=\"$service\", component=\"$component\"}",
+              "legendFormat": "Free Space",
+              "refId": "A"
+            }
+          ],
+          "title": "Free Space Over Time",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 37
+          },
+          "id": 101,
+          "panels": [],
+          "title": "Application Metrics",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "green",
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 22
+          },
+          "id": 5,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "kube_deployment_status_replicas_available{deployment=\"$service\", namespace=\"download-clients\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Pod Availability",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.1
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 22
+          },
+          "id": 19,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "(sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\", response_code=~\"5..\"}[5m])) / sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))) * 100",
+              "refId": "A"
+            }
+          ],
+          "title": "Error Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 26
+          },
+          "id": 18,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "green",
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 22
+          },
+          "id": 6,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "sum(up{job=~\".*$service.*\"} * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}) by (namespace)",
+              "refId": "A"
+            }
+          ],
+          "title": "Web Interface Status",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 2
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 22
+          },
+          "id": 7,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "sum(increase(kube_pod_container_status_restarts_total{pod=~\"$service-.*\", namespace=\"download-clients\"}[1h]) * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}) by (namespace)",
+              "refId": "A"
+            }
+          ],
+          "title": "Pod Restarts (1h)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "green",
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 26
+          },
+          "id": 23,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "kube_pod_container_status_ready{container=\"transmission-exporter\", pod=~\"$service-.*\", namespace=\"download-clients\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Exporter Container Status",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "green",
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 26
+          },
+          "id": 25,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "count(transmission_version{service=\"$service\", component=\"$component\"}) > 0",
+              "refId": "A"
+            }
+          ],
+          "title": "Exporter Metrics Endpoint Status",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 30
+          },
+          "id": 1008,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "kube_pod_container_status_ready{container=\"transmission-exporter\", pod=~\"$service-.*\", namespace=\"download-clients\"}",
+              "legendFormat": "Transmission Exporter Ready",
+              "refId": "A"
+            }
+          ],
+          "title": "Exporter Container Status Over Time",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 38
+          },
+          "id": 1002,
+          "panels": [],
+          "title": "Performance & Observability",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 39
+          },
+          "id": 22,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m])) by (le))",
+              "legendFormat": "p95 Response Time",
+              "refId": "A"
+            }
+          ],
+          "title": "Response Time (p95)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 39
+          },
+          "id": 130,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))",
+              "legendFormat": "Request Rate (req/s)",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Rate Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 47
+          },
+          "id": 124,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "max(scrape_duration_seconds{job=\"transmission-metrics\"})",
+              "refId": "A"
+            }
+          ],
+          "title": "Scrape Duration (prom)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 47
+          },
+          "id": 125,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "max(scrape_samples_scraped{job=\"transmission-metrics\"})",
+              "refId": "A"
+            }
+          ],
+          "title": "Samples Scraped (prom)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 24,
+            "x": 0,
+            "y": 51
+          },
+          "id": 126,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "max(scrape_series_added{job=\"transmission-metrics\"})",
+              "refId": "A"
+            }
+          ],
+          "title": "scrape_series_added (prom)",
+          "type": "stat"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 55
+          },
+          "id": 1001,
+          "panels": [],
+          "title": "Torrent Metrics",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 68
+          },
+          "id": 29,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_speed_limit_down_bytes{service=\"$service\", component=\"$component\", enabled=\"1\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Download Speed Limit",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 68
+          },
+          "id": 30,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_speed_limit_up_bytes{service=\"$service\", component=\"$component\", enabled=\"1\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Upload Speed Limit",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 68
+          },
+          "id": 31,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_queue_down{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Download Queue Limit",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 68
+          },
+          "id": 32,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_queue_up{service=\"$service\", component=\"$component\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Upload Queue Limit",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 72
+          },
+          "id": 33,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_alt_speed_down{service=\"$service\", component=\"$component\", enabled=\"1\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Alt Speed Down",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 72
+          },
+          "id": 34,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "transmission_alt_speed_up{service=\"$service\", component=\"$component\", enabled=\"1\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Alt Speed Up",
+          "type": "stat"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 77
+          },
+          "id": 100,
+          "panels": [],
+          "title": "Resource Utilization",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 85
+                  }
+                ]
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 69
+          },
+          "id": 1,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "(rate(container_cpu_usage_seconds_total{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}[5m]) / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "CPU Usage",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 85
+                  }
+                ]
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 69
+          },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "(container_memory_working_set_bytes{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}",
+              "refId": "A"
+            }
+          ],
+          "title": "Memory Usage",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 73
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "(rate(container_cpu_usage_seconds_total{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}[5m]) / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}",
+              "legendFormat": "CPU Usage - {{pod}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "max((kube_pod_container_resource_requests{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100) by (namespace, container)",
+              "legendFormat": "CPU Request",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "100",
+              "legendFormat": "CPU Limit",
+              "refId": "C"
+            }
+          ],
+          "title": "CPU Usage Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 73
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "(container_memory_working_set_bytes{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}",
+              "legendFormat": "Memory Usage - {{pod}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "max((kube_pod_container_resource_requests{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100) by (namespace, container)",
+              "legendFormat": "Memory Request",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "100",
+              "legendFormat": "Memory Limit",
+              "refId": "C"
+            }
+          ],
+          "title": "Memory Usage Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 81
+          },
+          "id": 119,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "100 * sum(rate(container_cpu_cfs_throttled_periods_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m])) / sum(rate(container_cpu_cfs_periods_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m]))",
+              "legendFormat": "throttling_pct",
+              "refId": "A"
+            }
+          ],
+          "title": "CPU Throttling %",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 81
+          },
+          "id": 120,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(container_oom_events_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[1h]))",
+              "refId": "A"
+            }
+          ],
+          "title": "OOM Events (1h)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 89
+          },
+          "id": 122,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_fs_reads_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m]))",
+              "legendFormat": "read",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_fs_writes_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m]))",
+              "legendFormat": "write",
+              "refId": "B"
+            }
+          ],
+          "title": "Filesystem IO (bytes/s)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 89
+          },
+          "id": 114,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))",
+              "legendFormat": "rx",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))",
+              "legendFormat": "tx",
+              "refId": "B"
+            }
+          ],
+          "title": "Network Throughput (bytes/s)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 97
+          },
+          "id": 8,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true,
+            "percentChangeColorMode": "standard"
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~\"$service-config.*\", namespace=\"download-clients\"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~\"$service-config.*\", namespace=\"download-clients\"}) * 100",
+              "refId": "A"
+            }
+          ],
+          "title": "Config PVC Usage",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 97
+          },
+          "id": 121,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "(kubelet_volume_stats_inodes_used{namespace=\"download-clients\",persistentvolumeclaim=~\"$service-config.*\"} / kubelet_volume_stats_inodes{namespace=\"download-clients\",persistentvolumeclaim=~\"$service-config.*\"}) * 100",
+              "refId": "A"
+            }
+          ],
+          "title": "Config PVC Inode Usage (%)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 97
+          },
+          "id": 127,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~\"^transmission-config$\", namespace=\"download-clients\"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~\"^transmission-config$\", namespace=\"download-clients\"}) * 100",
+              "refId": "A"
+            }
+          ],
+          "title": "Config PVC Available (%)",
+          "type": "stat"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 106
+          },
+          "id": 103,
+          "panels": [],
+          "title": "Networking & Additional Monitoring",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 107
+          },
+          "id": 9,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))",
+              "legendFormat": "Request Rate",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Rate Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 107
+          },
+          "id": 10,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "(sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\", response_code=~\"5..\"}[5m])) / sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))) * 100",
+              "legendFormat": "Error Rate",
+              "refId": "A"
+            }
+          ],
+          "title": "Error Rate Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 115
+          },
+          "id": 123,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_network_receive_errors_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))",
+              "legendFormat": "rx_err",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_network_transmit_errors_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))",
+              "legendFormat": "tx_err",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_network_receive_packets_dropped_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))",
+              "legendFormat": "rx_drop",
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(rate(container_network_transmit_packets_dropped_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))",
+              "legendFormat": "tx_drop",
+              "refId": "D"
+            }
+          ],
+          "title": "Network Errors/Drops (5m rate)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ms"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 123
+          },
+          "id": 11,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m])) by (le))",
+              "legendFormat": "p95 Response Time",
+              "refId": "A"
+            }
+          ],
+          "title": "Response Time (p95)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 12,
+            "y": 123
+          },
+          "id": 1009,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "kube_pod_container_status_waiting_reason{namespace=\"download-clients\",pod=~\"transmission-.*\"}",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Container Waiting Reasons",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "__name__": true,
+                  "component": true,
+                  "service": true,
+                  "url": true,
+                  "wikiurl": true
+                },
+                "indexByName": {
+                  "Message": 2,
+                  "Source": 1,
+                  "Type": 0,
+                  "Value": 3
+                },
+                "renameByName": {
+                  "Value": "Value",
+                  "message": "Message",
+                  "source": "Source",
+                  "type": "Type"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 131
+          },
+          "id": 128,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "kube_pod_container_status_terminated_reason{namespace=\"download-clients\",pod=~\"transmission-.*\"}",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Container Terminated Reasons",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "__name__": true,
+                  "component": true,
+                  "service": true,
+                  "url": true,
+                  "wikiurl": true
+                },
+                "indexByName": {
+                  "Message": 2,
+                  "Source": 1,
+                  "Type": 0,
+                  "Value": 3
+                },
+                "renameByName": {
+                  "Value": "Value",
+                  "message": "Message",
+                  "source": "Source",
+                  "type": "Type"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "name": "Prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 139
+          },
+          "id": 129,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "name": "Prometheus"
+              },
+              "expr": "kube_pod_container_status_last_terminated_exitcode{namespace=\"download-clients\",pod=~\"transmission-.*\"}",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Last Terminated Exit Code",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "__name__": true,
+                  "component": true,
+                  "service": true,
+                  "url": true,
+                  "wikiurl": true
+                },
+                "indexByName": {
+                  "Message": 2,
+                  "Source": 1,
+                  "Type": 0,
+                  "Value": 3
+                },
+                "renameByName": {
+                  "Value": "Value",
+                  "message": "Message",
+                  "source": "Source",
+                  "type": "Type"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "name": "Prometheus",
+            "type": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 24,
+            "x": 0,
+            "y": 147
+          },
+          "id": 131,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.1.3",
+          "targets": [
+            {
+              "datasource": {
+                "name": "Prometheus",
+                "type": "prometheus"
+              },
+              "expr": "sum(increase(kube_pod_container_status_restarts_total{container=\"transmission-exporter\", pod=~\"transmission-.*\", namespace=\"download-clients\"}[1h]))",
+              "refId": "A"
+            }
+          ],
+          "title": "Exporter Restarts (1h)",
+          "type": "stat"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": [
+        "transmission",
+        "download-clients",
+        "monitoring"
+      ],
+      "templating": {
+        "list": [
+          {
+            "hide": 0,
+            "label": "Service",
+            "name": "service",
+            "query": "transmission",
+            "skipUrlSync": false,
+            "type": "constant"
+          },
+          {
+            "hide": 0,
+            "label": "Component",
+            "name": "component",
+            "query": "download-clients",
+            "skipUrlSync": false,
+            "type": "constant"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Transmission - Download Clients",
+      "uid": "transmission-download-clients",
+      "version": 1,
+      "weekStart": ""
+    }
+---
+# Source: transmission/charts/app-chart/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: transmission-config
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "pvc"
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: transmission/charts/app-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission-http
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: service-http
+  annotations:
+    description: Transmission HTTP service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+---
+# Source: transmission/charts/app-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission-metrics
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: service-metrics
+  annotations:
+    description: Transmission metrics service
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: 9100
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+---
+# Source: transmission/charts/app-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "deployment"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: transmission
+      app.kubernetes.io/name: transmission
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: transmission
+        app.kubernetes.io/name: transmission
+        app.kubernetes.io/version: 4.0.6
+        helm.sh/chart: app-chart-0.0.1
+        app.kubernetes.io/component: download-client
+        app.kubernetes.io/part-of: download-clients
+        logging.kubernetes.io/component: download-clients
+        logging.kubernetes.io/service: transmission
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 1010
+        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        supplementalGroups: []
+      serviceAccountName: transmission
+      dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: transmission
+          image: ghcr.io/runlix/transmission:release-4.0.6-latest@sha256:dc5948e80732d5dbc2ce4a9ed19a07c822de6348926833798c52c63be81af747
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: TZ
+              value: UTC
+            - name: TRANSMISSION_WEB_HOME
+              value: /usr/share/transmission/public_html
+            - name: USER
+              value: admin
+            - name: TRANSMISSION_RPC_ENABLED
+              value: "true"
+            - name: TRANSMISSION_RPC_BIND_ADDRESS
+              value: 0.0.0.0
+            - name: TRANSMISSION_RPC_PORT
+              value: "8080"
+            - name: TRANSMISSION_RPC_WHITELIST_ENABLED
+              value: "false"
+            - name: TRANSMISSION_RPC_HOST_WHITELIST_ENABLED
+              value: "false"
+            - name: TRANSMISSION_DOWNLOAD_DIR
+              value: /downloads/complete
+            - name: TRANSMISSION_INCOMPLETE_DIR_ENABLED
+              value: "true"
+            - name: TRANSMISSION_INCOMPLETE_DIR
+              value: /downloads/incomplete
+            - name: TRANSMISSION_WATCH_DIR_ENABLED
+              value: "true"
+            - name: TRANSMISSION_WATCH_DIR
+              value: /watch
+            - name: TRANSMISSION_PEER_LIMIT_GLOBAL
+              value: "200"
+            - name: TRANSMISSION_PEER_LIMIT_PER_TORRENT
+              value: "50"
+            - name: TRANSMISSION_SPEED_LIMIT_UP_ENABLED
+              value: "false"
+            - name: TRANSMISSION_SPEED_LIMIT_DOWN_ENABLED
+              value: "false"
+            - name: TRANSMISSION_BLOCKLIST_ENABLED
+              value: "false"
+            - name: TRANSMISSION_DHT_ENABLED
+              value: "true"
+            - name: TRANSMISSION_PEX_ENABLED
+              value: "true"
+            - name: TRANSMISSION_LPD_ENABLED
+              value: "false"
+          envFrom:
+            - secretRef:
+                name: transmission-secret
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /downloads
+              name: downloads
+            - mountPath: /media
+              name: media
+            - mountPath: /watch
+              name: watch
+          resources:
+            limits:
+              cpu: 1000m
+              ephemeral-storage: 2Gi
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 2Gi
+              memory: 256Mi
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 10
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 10
+          startupProbe:
+            failureThreshold: 30
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            appArmorProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsGroup: 1010
+            runAsNonRoot: true
+            runAsUser: 1011
+            seccompProfile:
+              type: RuntimeDefault
+        - name: transmission-exporter
+          image: metalmatze/transmission-exporter:0.3.0@sha256:90d6acb6d47d717015eda05b8233e65e2236cbd2d56ceaf08411bbb964412c41
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9100
+              protocol: TCP
+          env:
+            - name: WEB_ADDR
+              value: :9100
+            - name: TRANSMISSION_ADDR
+              value: http://localhost:8080
+            - name: TRANSMISSION_USERNAME
+              value: admin
+            - name: TRANSMISSION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: PASS
+                  name: transmission-secret
+          resources:
+            limits:
+              cpu: 100m
+              ephemeral-storage: 10Mi
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              ephemeral-storage: 10Mi
+              memory: 32Mi
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /metrics
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            appArmorProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        -
+          name: config
+          persistentVolumeClaim:
+            claimName: transmission-config
+        -
+          name: downloads
+          nfs:
+            path: /mnt/vol1/media-center/downloads
+            server: snorlax.orhayoun.com
+        -
+          name: media
+          nfs:
+            path: /mnt/vol1/media-center/media
+            server: snorlax.orhayoun.com
+        -
+          emptyDir:
+            sizeLimit: 1Gi
+          name: watch
+---
+# Source: transmission/charts/app-chart/templates/authorizationpolicy.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: transmission-homeassistant
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "authorization-policy"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: transmission
+      app.kubernetes.io/name: transmission
+  action: ALLOW
+  rules:
+    - from:
+      - source:
+          principals:
+          - cluster.local/ns/homeassistant/sa/homeassistant-home-assistant
+      to:
+      - operation:
+          ports:
+          - "8080"
+---
+# Source: transmission/charts/app-chart/templates/authorizationpolicy.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: transmission-ingress
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "authorization-policy"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: transmission
+      app.kubernetes.io/name: transmission
+  action: ALLOW
+  rules:
+    - from:
+      - source:
+          principals:
+          - cluster.local/ns/istio-system/sa/shared-platform-gateway-istio
+      to:
+      - operation:
+          ports:
+          - "8080"
+---
+# Source: transmission/charts/app-chart/templates/authorizationpolicy.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: transmission-media-services
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "authorization-policy"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: transmission
+      app.kubernetes.io/name: transmission
+  action: ALLOW
+  rules:
+    - from:
+      - source:
+          principals:
+          - cluster.local/ns/media-center/sa/radarr
+          - cluster.local/ns/media-center/sa/sonarr
+      to:
+      - operation:
+          ports:
+          - "8080"
+---
+# Source: transmission/charts/app-chart/templates/authorizationpolicy.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: transmission-prometheus
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "authorization-policy"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: transmission
+      app.kubernetes.io/name: transmission
+  action: ALLOW
+  rules:
+    - from:
+      - source:
+          principals:
+          - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
+      to:
+      - operation:
+          ports:
+          - "9100"
+---
+# Source: transmission/charts/app-chart/templates/destinationrule.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: transmission
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "destination-rule"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  host: transmission-http
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 10
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+      tcp:
+        maxConnections: 100
+    outlierDetection:
+      baseEjectionTime: 30s
+      consecutive5xxErrors: 5
+      interval: 30s
+      maxEjectionPercent: 50
+---
+# Source: transmission/charts/app-chart/templates/httproute.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: transmission-route
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "http-route"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  parentRefs:
+    - name: shared-platform-gateway
+      namespace: istio-system
+      kind: Gateway
+      group: gateway.networking.k8s.io
+      sectionName: https
+  hostnames:
+    - transmission-k8s.orhayoun.com
+  rules:
+    -
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: transmission-http
+          port: 8080
+          weight: 100
+---
+# Source: transmission/charts/app-chart/templates/httproute.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: transmission-http-redirect
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "http-route"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  parentRefs:
+    - name: shared-platform-gateway
+      namespace: istio-system
+      kind: Gateway
+      group: gateway.networking.k8s.io
+      sectionName: http
+  hostnames:
+    - transmission-k8s.orhayoun.com
+  rules:
+    -
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - requestRedirect:
+            scheme: https
+            statusCode: 301
+          type: RequestRedirect
+---
+# Source: transmission/charts/app-chart/templates/prometheusrule.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: transmission
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "prometheus-rule"
+
+spec:
+  groups:
+    - name: transmission.rules
+      rules:
+        - alert: TransmissionServiceDown
+          annotations:
+            description: Transmission service has been down for more than 2 minutes.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission service is down
+          expr: up{job="transmission"} == 0
+          for: 2m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: critical
+        - alert: TransmissionHighMemoryUsage
+          annotations:
+            description: Transmission pod {{ $labels.pod }} memory usage is above 85% for
+              more than 5 minutes.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission high memory usage
+          expr: (container_memory_working_set_bytes{pod=~"transmission-.*", container="transmission",
+            namespace="download-clients"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource="memory",
+            pod=~"transmission-.*", container="transmission", namespace="download-clients"})
+            * 100 > 85
+          for: 5m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: warning
+        - alert: TransmissionHighCPUUsage
+          annotations:
+            description: Transmission pod {{ $labels.pod }} CPU usage is above 80% for more
+              than 5 minutes.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission high CPU usage
+          expr: (rate(container_cpu_usage_seconds_total{pod=~"transmission-.*", container="transmission",
+            namespace="download-clients"}[5m]) / on(pod, container, namespace) kube_pod_container_resource_limits{resource="cpu",
+            pod=~"transmission-.*", container="transmission", namespace="download-clients"})
+            * 100 > 80
+          for: 5m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: warning
+        - alert: TransmissionNFSStorageIssue
+          annotations:
+            description: NFS downloads storage on snorlax.orhayoun.com has less than 10% free
+              space available.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: NFS downloads storage critically low
+          expr: up{job="transmission"} == 1 and on() (node_filesystem_avail_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"}
+            / node_filesystem_size_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"})
+            * 100 < 10
+          for: 5m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: critical
+            volume_type: nfs
+        - alert: TransmissionHighDiskIO
+          annotations:
+            description: Transmission pod {{ $labels.pod }} has sustained high disk I/O (>50MB/s)
+              for more than 10 minutes.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission high disk I/O
+          expr: rate(container_fs_reads_bytes_total{pod=~"transmission-.*", namespace="download-clients"}[5m])
+            + rate(container_fs_writes_bytes_total{pod=~"transmission-.*", namespace="download-clients"}[5m])
+            > 50000000
+          for: 10m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: warning
+        - alert: TransmissionHighPeerConnections
+          annotations:
+            description: Transmission global peer connections ({{ $value }}) are above 150
+              (75% of 200 limit) for more than 5 minutes.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission high peer connection count
+          expr: transmission_global_peer_limit{service="transmission", component="download-clients"}
+            > 150
+          for: 5m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: warning
+        - alert: TransmissionDownloadQueueStalled
+          annotations:
+            description: Transmission download queue has {{ $value }} stalled items for more
+              than 10 minutes.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission download queue stalled
+          expr: transmission_queue_down{service="transmission", component="download-clients"}
+            > 10
+          for: 10m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: warning
+        - alert: TransmissionHighActiveTorrentCount
+          annotations:
+            description: Transmission has {{ $value }} active torrents for more than 5 minutes.
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission high active torrent count
+          expr: transmission_session_stats_torrents_active{service="transmission", component="download-clients"}
+            > 50
+          for: 5m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: info
+        - alert: TransmissionTorrentCompleted
+          annotations:
+            description: A torrent has completed downloading and started seeding ({{ $value
+              }} torrents completed in the last 5 minutes).
+            runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
+            summary: Transmission torrent completed
+          expr: |
+            increase(
+              transmission_torrents_seeding{service="transmission", component="download-clients"}[5m]
+            ) > 0
+          for: 0m
+          labels:
+            component: download-clients
+            service: transmission
+            severity: info
+---
+# Source: transmission/templates/sealed-secret.yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: transmission-secret
+  namespace: download-clients
+  labels:
+    helm.sh/chart: application-0.1.0
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  encryptedData:
+    PASS: AgBkTLlDtMuA7pQKPLU0hFF8P/3LFByTNdolGxMZEgZzxYWUlSPIiVVQtwXacQdqfqZ85lv0RVZIC28PAteb4dGmenqLF1Pp19WJVsMoafA/qVVtJgjkNGXhlaOsrVoVPE8KMCN2eD2yMKQYyCNXW4coo/Mo9o7bZlsEuENIl39Zf3HuwSeBTYwRll3llst9TX+H7ijsYLYZ0UmEkJu5FcKp9Omlsfe2eD6spbs9i780lq5ER5IWPw/6cxWY79NQAELb3zBNPnHa24jvXKITyMxg3ubpSyFh2sWguzXEPtRB+5yWBjC1wlGCfStGR7XPyUvdMmLg/+CAMV+u6g/BRwpFmJdbtrvSCCrPocUZQyWhTGhXvDZel5aYfl0cvqIzOhD5h3rzmhG74rwRPsLgccXHan4QVTq/LI9RmYnitVY4rqQ5OC+RSNJ1c0uZAKMgcHhtoJx3SHotjZjCYexCqwgZJ9IYmPT2bAe50NqqxasW5xZZJFP1nVOHVWo80j9KRkvHNqVhye38BCU3F28ORaCvZHDkzA5alPNbvVfzGVek8V+AwwrY8hPebnqE4OkASMt9OYIIFJLzGZ8aOWfygKWvSMRVGzGrOI9CRvT3gZ5BZHeM1da9WOVr+ZXEmJWCChMrvBbCp3byJWKtthGLPKYXFp3MTCCspV97wdgKbnHnpVgAF8F0Cz990hUB4D83mTP+hu+tQYUZ2rHieRmRGRhy1lEnHJuSwQ==
+  template:
+    metadata:
+      name: transmission-secret
+      namespace: download-clients
+      labels:
+        app.kubernetes.io/name: transmission
+    type: Opaque
+---
+# Source: transmission/charts/app-chart/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: transmission
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: app-chart-0.0.1
+    app.kubernetes.io/component: "servicemonitor"
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: service-metrics
+      app.kubernetes.io/instance: transmission
+      app.kubernetes.io/name: transmission
+  namespaceSelector:
+    matchNames:
+    - download-clients
+  endpoints:
+    - port: metrics
+      interval: 10s
+      scrapeTimeout: 5s
+      path: /metrics
+      honorLabels: true
+      relabelings:
+        - action: replace
+          sourceLabels:
+          - __meta_kubernetes_namespace
+          targetLabel: namespace
+        - action: replace
+          sourceLabels:
+          - __meta_kubernetes_pod_name
+          targetLabel: instance
+      metricRelabelings:
+        - action: replace
+          replacement: transmission
+          targetLabel: service
+        - action: replace
+          replacement: download-clients
+          targetLabel: component
