@@ -273,7 +273,7 @@ spec:
               value: "false"
           envFrom:
             - secretRef:
-                name: transmission-secret
+                name: transmission-secrets
           volumeMounts:
             - mountPath: /config
               name: config

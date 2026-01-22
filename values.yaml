@@ -329,7 +329,7 @@ deployment:
       
       envFrom:
         - secretRef:
-            name: transmission-secret
+            name: transmission-secrets
 
       ports:
         - containerPort: 8080
