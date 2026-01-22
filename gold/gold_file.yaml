@@ -348,7 +348,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: PASS
-                  name: transmission-secret
+                  name: transmission-secrets
           resources:
             limits:
               cpu: 100m

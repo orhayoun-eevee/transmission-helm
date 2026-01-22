@@ -420,7 +420,7 @@ deployment:
         - name: TRANSMISSION_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: transmission-secret
+              name: transmission-secrets
               key: PASS
 
       ports:
