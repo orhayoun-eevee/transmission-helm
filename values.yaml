@@ -279,8 +279,7 @@ deployment:
       enabled: true
       image:
         repository: ghcr.io/runlix/transmission
-        tag: "release-4.0.6-latest"
-        digest: "sha256:dc5948e80732d5dbc2ce4a9ed19a07c822de6348926833798c52c63be81af747" # Add if known, otherwise latest
+        tag: "release-4.0.6-latest@sha256:dc5948e80732d5dbc2ce4a9ed19a07c822de6348926833798c52c63be81af747"
         pullPolicy: IfNotPresent
 
       env:
@@ -406,8 +405,7 @@ deployment:
       enabled: true
       image:
         repository: metalmatze/transmission-exporter
-        tag: "0.3.0"
-        digest: "sha256:90d6acb6d47d717015eda05b8233e65e2236cbd2d56ceaf08411bbb964412c41"
+        tag: "0.3.0@sha256:90d6acb6d47d717015eda05b8233e65e2236cbd2d56ceaf08411bbb964412c41"
         pullPolicy: IfNotPresent
 
       env:
