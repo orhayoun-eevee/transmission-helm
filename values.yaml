@@ -715,6 +715,10 @@ metrics:
   # Grafana Configuration
   grafana:
     enabled: true
+    instanceSelector:
+      matchLabels:
+        app.kubernetes.io/instance: prometheus
+        app.kubernetes.io/name: grafana
     dashboard:
       enabled: true
       items:
@@ -723,9 +727,6 @@ metrics:
           name: "application"
           allowCrossNamespaceImport: true
           file: "app.json"
-          instanceSelector:
-            matchLabels:
-              dashboards: "grafana"
 # ----------------------------------------------------------------------------
 # Service Account
 # ----------------------------------------------------------------------------
