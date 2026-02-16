@@ -1,0 +1,397 @@
+---
+# Source: transmission/templates/all.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: transmission-default
+  namespace: download-clients
+  labels:
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: transmission-0.0.7
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: istio-system
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: shared-platform-gateway
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: monitoring
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: media-center
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/part-of: media-center
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: homeassistant
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: home-assistant
+      ports:
+      - port: 15008
+        protocol: TCP
+  egress:
+    - ports:
+      - port: 53
+        protocol: UDP
+      - port: 53
+        protocol: TCP
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+    - ports:
+      - port: 15008
+        protocol: TCP
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: istio-system
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: download-clients
+    - ports:
+      - port: 443
+        protocol: TCP
+      - port: 51413
+        protocol: TCP
+      - port: 51413
+        protocol: UDP
+      to:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+          except:
+          - 10.42.0.0/16
+          - 10.43.0.0/16
+          - 192.168.0.0/16
+---
+# Source: transmission/templates/all.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: transmission
+  namespace: download-clients
+  labels:
+    app.kubernetes.io/component: serviceaccount
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: transmission-0.0.7
+  annotations:
+    app.kubernetes.io/managed-by: argocd
+    description: Transmission media center service account
+automountServiceAccountToken: false
+---
+# Source: transmission/templates/all.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: transmission-config
+  namespace: download-clients
+  labels:
+    app.kubernetes.io/component: pvc
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: transmission-0.0.7
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: transmission/templates/all.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission-http
+  namespace: download-clients
+  labels:
+    app.kubernetes.io/component: service-http
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: transmission-0.0.7
+  annotations:
+    description: Transmission HTTP service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/instance: test-release
+---
+# Source: transmission/templates/all.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: download-clients
+  labels:
+    app.kubernetes.io/component: deployment
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: transmission
+    app.kubernetes.io/version: 4.0.6
+    helm.sh/chart: transmission-0.0.7
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: deployment
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: transmission
+        app.kubernetes.io/version: 4.0.6
+        helm.sh/chart: transmission-0.0.7
+        app.kubernetes.io/part-of: download-clients
+        logging.kubernetes.io/component: download-clients
+        logging.kubernetes.io/service: transmission
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 1010
+        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
+        supplementalGroups: []
+      serviceAccountName: transmission
+      dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: transmission
+          image: ghcr.io/runlix/transmission:release-4.0.6-latest@sha256:dc5948e80732d5dbc2ce4a9ed19a07c822de6348926833798c52c63be81af747
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: TZ
+              value: UTC
+            - name: TRANSMISSION_WEB_HOME
+              value: /usr/share/transmission/public_html
+            - name: USER
+              value: admin
+            - name: TRANSMISSION_RPC_ENABLED
+              value: "true"
+            - name: TRANSMISSION_RPC_BIND_ADDRESS
+              value: 0.0.0.0
+            - name: TRANSMISSION_RPC_PORT
+              value: "8080"
+            - name: TRANSMISSION_RPC_WHITELIST_ENABLED
+              value: "false"
+            - name: TRANSMISSION_RPC_HOST_WHITELIST_ENABLED
+              value: "false"
+            - name: TRANSMISSION_DOWNLOAD_DIR
+              value: /downloads/complete
+            - name: TRANSMISSION_INCOMPLETE_DIR_ENABLED
+              value: "true"
+            - name: TRANSMISSION_INCOMPLETE_DIR
+              value: /downloads/incomplete
+            - name: TRANSMISSION_WATCH_DIR_ENABLED
+              value: "true"
+            - name: TRANSMISSION_WATCH_DIR
+              value: /watch
+            - name: TRANSMISSION_PEER_LIMIT_GLOBAL
+              value: "200"
+            - name: TRANSMISSION_PEER_LIMIT_PER_TORRENT
+              value: "50"
+            - name: TRANSMISSION_SPEED_LIMIT_UP_ENABLED
+              value: "false"
+            - name: TRANSMISSION_SPEED_LIMIT_DOWN_ENABLED
+              value: "false"
+            - name: TRANSMISSION_BLOCKLIST_ENABLED
+              value: "false"
+            - name: TRANSMISSION_DHT_ENABLED
+              value: "true"
+            - name: TRANSMISSION_PEX_ENABLED
+              value: "true"
+            - name: TRANSMISSION_LPD_ENABLED
+              value: "false"
+          envFrom:
+            - secretRef:
+                name: transmission-secrets
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /downloads
+              name: downloads
+            - mountPath: /media
+              name: media
+            - mountPath: /watch
+              name: watch
+          resources:
+            limits:
+              cpu: 1000m
+              ephemeral-storage: 2Gi
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 2Gi
+              memory: 256Mi
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 10
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 10
+          startupProbe:
+            failureThreshold: 30
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            appArmorProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1010
+            runAsNonRoot: true
+            runAsUser: 1011
+            seccompProfile:
+              type: RuntimeDefault
+        - name: transmission-exporter
+          image: metalmatze/transmission-exporter:0.3.0@sha256:90d6acb6d47d717015eda05b8233e65e2236cbd2d56ceaf08411bbb964412c41
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9100
+              protocol: TCP
+          env:
+            - name: WEB_ADDR
+              value: :9100
+            - name: TRANSMISSION_ADDR
+              value: http://localhost:8080
+            - name: TRANSMISSION_USERNAME
+              value: admin
+            - name: TRANSMISSION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: PASS
+                  name: transmission-secrets
+          resources:
+            limits:
+              cpu: 100m
+              ephemeral-storage: 10Mi
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              ephemeral-storage: 10Mi
+              memory: 32Mi
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /metrics
+              port: metrics
+              scheme: HTTP
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            appArmorProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: transmission-config
+        - name: downloads
+          nfs:
+            path: /mnt/vol1/media-center/downloads
+            server: snorlax.orhayoun.com
+        - name: media
+          nfs:
+            path: /mnt/vol1/media-center/media
+            server: snorlax.orhayoun.com
+        - emptyDir:
+            sizeLimit: 1Gi
+          name: watch

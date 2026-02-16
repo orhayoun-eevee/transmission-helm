@@ -1,1 +1,75 @@
-# transmission-helm
+# Transmission Helm Chart
+
+This chart deploys Transmission using the shared dependency `lib-chart` (`0.0.7`).
+
+## Installation
+
+```bash
+helm install transmission . --namespace download-clients
+```
+
+## Dependencies
+
+- `lib-chart` (`0.0.7`) from `oci://ghcr.io/orhayoun-eevee`
+
+Update dependencies from chart root:
+
+```bash
+helm dependency build
+```
+
+## Validation and Testing
+
+This chart follows the same reusable 5-layer validation pipeline used by `helm-common-lib`:
+
+1. Syntax and structure (`yamllint`, `helm lint --strict`)
+2. Kubernetes schema validation (`kubeconform`) on rendered scenarios
+3. Metadata and version checks (`ct lint` + version bump policy)
+4. Unit and regression checks (`helm-unittest` + scenario snapshots)
+5. Policy checks (`checkov`, `kube-linter`)
+
+### CI Workflows
+
+- PR validation: `.github/workflows/on-pr.yaml` -> `build-workflow/.github/workflows/helm-validate.yaml`
+- Release: `.github/workflows/on-tag.yaml` -> `build-workflow/.github/workflows/release-chart.yaml`
+
+### Local Docker Validation
+
+```bash
+make docker-build
+make deps
+make snapshot-update
+make ci
+```
+
+### Snapshot Drift Behavior
+
+Snapshots in `tests/snapshots/*.yaml` are part of CI contract.
+If rendered output changes and snapshots are not updated (or are updated incorrectly), Layer 4 fails the PR.
+
+### Test Assets
+
+- `tests/transmission_contract_test.yaml`
+- `tests/scenarios/full.yaml`
+- `tests/scenarios/minimal.yaml`
+- `tests/snapshots/*.yaml`
+
+## Version Bump Automation
+
+```bash
+make bump VERSION=x.y.z
+```
+
+This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
+
+## App-Specific Notes
+
+- Namespace: `download-clients`
+- Main container runs as UID/GID `1011/1010`
+- Config PVC claim: `transmission-config` (RWO)
+
+## References
+
+- https://transmissionbt.com/
+- `Chart.yaml`
+- `values.yaml`
