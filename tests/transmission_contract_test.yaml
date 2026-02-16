@@ -5,20 +5,20 @@ tests:
   - it: renders expected default resource set and ingress host
     asserts:
       - hasDocuments:
-          count: 15
+          count: 16
       - documentIndex: 4
         equal:
           path: spec.hostnames[0]
           value: transmission-k8s.orhayoun.com
-      - documentIndex: 13
+      - documentIndex: 14
         equal:
           path: spec.instanceSelector.matchLabels["app.kubernetes.io/instance"]
           value: prometheus
-      - documentIndex: 13
+      - documentIndex: 14
         equal:
           path: spec.instanceSelector.matchLabels["app.kubernetes.io/name"]
           value: grafana
-      - documentIndex: 11
+      - documentIndex: 12
         equal:
           path: kind
           value: ServiceMonitor
@@ -41,7 +41,7 @@ tests:
         equal:
           path: spec.template.spec.containers[0].securityContext.runAsGroup
           value: 1010
-      - documentIndex: 14
+      - documentIndex: 15
         equal:
           path: metadata.name
           value: transmission-config

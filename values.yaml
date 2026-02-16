@@ -227,7 +227,7 @@ network:
     # ----------------------------------------------------------------------------
     # Circuit Breaker Configuration
     # ----------------------------------------------------------------------------
-    destinationrule:
+    destinationRule:
       enabled: true
       host: transmission-http
       trafficPolicy:
