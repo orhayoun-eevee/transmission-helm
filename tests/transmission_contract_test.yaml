@@ -1,0 +1,50 @@
+suite: transmission chart contract
+templates:
+  - templates/all.yaml
+tests:
+  - it: renders expected default resource set and ingress host
+    asserts:
+      - hasDocuments:
+          count: 15
+      - documentIndex: 4
+        equal:
+          path: spec.hostnames[0]
+          value: transmission-k8s.orhayoun.com
+      - documentIndex: 13
+        equal:
+          path: spec.instanceSelector.matchLabels.dashboards
+          value: grafana
+      - documentIndex: 11
+        equal:
+          path: kind
+          value: ServiceMonitor
+
+  - it: wires transmission application container security and storage correctly
+    asserts:
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].name
+          value: transmission
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 1011
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].securityContext.runAsGroup
+          value: 1010
+      - documentIndex: 14
+        equal:
+          path: metadata.name
+          value: transmission-config
+
+  - it: keeps minimal scenario render compact and deterministic
+    values:
+      - scenarios/minimal.yaml
+    asserts:
+      - hasDocuments:
+          count: 5

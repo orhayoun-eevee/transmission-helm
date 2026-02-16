@@ -1,8 +1,8 @@
 apiVersion: v2
 name: transmission
-description: A Helm chart for Transmission using application-v2
+description: A Helm chart for Transmission using lib-chart
 type: application
-version: 0.0.5
+version: 0.0.7
 appVersion: "4.0.6"
 keywords:
   - transmission
@@ -10,8 +10,8 @@ keywords:
   - bittorrent
 dependencies:
   - name: lib-chart
-    version: "0.0.5"
-    repository: "oci://ghcr.io/orhayoun-eevee/lib-chart"
+    version: "0.0.7"
+    repository: "oci://ghcr.io/orhayoun-eevee"
 maintainers:
   - name: Transmission Team
 home: https://transmissionbt.com/

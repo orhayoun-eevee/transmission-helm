@@ -8,9 +8,7 @@ global:
   namespace: download-clients
   chart:
     appVersion: 4.0.6
-  labels:
-    overrides:
-      app.kubernetes.io/instance: transmission
+  labels: {}
 
 # ----------------------------------------------------------------------------
 # Service Configuration
@@ -87,7 +85,7 @@ network:
 
   networkPolicy:
     enabled: true
-    items: 
+    items:
       default:
         enabled: true
         policyTypes:
@@ -102,7 +100,7 @@ network:
                 podSelector:
                   matchLabels:
                     app.kubernetes.io/name: shared-platform-gateway
-                    
+
               # Prometheus metrics scraping (metrics port + HBONE for ambient mesh)
               - namespaceSelector:
                   matchLabels:
@@ -261,7 +259,6 @@ deployment:
 
   # Pod labels
   podLabels:
-    app.kubernetes.io/component: download-client
     app.kubernetes.io/part-of: download-clients
     logging.kubernetes.io/component: download-clients
     logging.kubernetes.io/service: transmission
@@ -325,7 +322,7 @@ deployment:
           value: "true"
         - name: TRANSMISSION_LPD_ENABLED
           value: "false"
-      
+
       envFrom:
         - secretRef:
             name: transmission-secrets
@@ -334,7 +331,7 @@ deployment:
         - containerPort: 8080
           name: http
           protocol: TCP
-      
+
       volumeMounts:
         - name: config
           mountPath: /config
@@ -375,7 +372,7 @@ deployment:
 
       # Container Security Context
       securityContext:
-        readOnlyRootFilesystem: false # Needs write access
+        readOnlyRootFilesystem: true
         runAsNonRoot: true
         runAsUser: 1011
         runAsGroup: 1010
@@ -530,7 +527,6 @@ metrics:
       matchLabels:
         app.kubernetes.io/name: transmission
         app.kubernetes.io/instance: transmission
-        app.kubernetes.io/component: service-metrics # Should match service labels if set by app-chart
 
     namespaceSelector:
       matchNames:
@@ -571,7 +567,22 @@ metrics:
           runbook_url: "https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting"
 
       - alert: TransmissionHighMemoryUsage
-        expr: (container_memory_working_set_bytes{pod=~"transmission-.*", container="transmission", namespace="download-clients"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource="memory", pod=~"transmission-.*", container="transmission", namespace="download-clients"}) * 100 > 85
+        expr: |
+          (
+            container_memory_working_set_bytes{
+              pod=~"transmission-.*",
+              container="transmission",
+              namespace="download-clients"
+            }
+            /
+            on(pod, container, namespace)
+            kube_pod_container_resource_limits{
+              resource="memory",
+              pod=~"transmission-.*",
+              container="transmission",
+              namespace="download-clients"
+            }
+          ) * 100 > 85
         for: 5m
         labels:
           severity: warning
@@ -583,7 +594,22 @@ metrics:
           runbook_url: "https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting"
 
       - alert: TransmissionHighCPUUsage
-        expr: (rate(container_cpu_usage_seconds_total{pod=~"transmission-.*", container="transmission", namespace="download-clients"}[5m]) / on(pod, container, namespace) kube_pod_container_resource_limits{resource="cpu", pod=~"transmission-.*", container="transmission", namespace="download-clients"}) * 100 > 80
+        expr: |
+          (
+            rate(container_cpu_usage_seconds_total{
+              pod=~"transmission-.*",
+              container="transmission",
+              namespace="download-clients"
+            }[5m])
+            /
+            on(pod, container, namespace)
+            kube_pod_container_resource_limits{
+              resource="cpu",
+              pod=~"transmission-.*",
+              container="transmission",
+              namespace="download-clients"
+            }
+          ) * 100 > 80
         for: 5m
         labels:
           severity: warning
@@ -595,7 +621,14 @@ metrics:
           runbook_url: "https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting"
 
       - alert: TransmissionNFSStorageIssue
-        expr: up{job="transmission"} == 1 and on() (node_filesystem_avail_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"} / node_filesystem_size_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"}) * 100 < 10
+        expr: |
+          up{job="transmission"} == 1
+          and on()
+          (
+            node_filesystem_avail_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"}
+            /
+            node_filesystem_size_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"}
+          ) * 100 < 10
         for: 5m
         labels:
           severity: critical
@@ -608,7 +641,16 @@ metrics:
           runbook_url: "https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting"
 
       - alert: TransmissionHighDiskIO
-        expr: rate(container_fs_reads_bytes_total{pod=~"transmission-.*", namespace="download-clients"}[5m]) + rate(container_fs_writes_bytes_total{pod=~"transmission-.*", namespace="download-clients"}[5m]) > 50000000  # 50MB/s
+        expr: |
+          rate(container_fs_reads_bytes_total{
+            pod=~"transmission-.*",
+            namespace="download-clients"
+          }[5m])
+          +
+          rate(container_fs_writes_bytes_total{
+            pod=~"transmission-.*",
+            namespace="download-clients"
+          }[5m]) > 50000000  # 50MB/s
         for: 10m
         labels:
           severity: warning
@@ -681,14 +723,9 @@ metrics:
           name: "application"
           allowCrossNamespaceImport: true
           file: "app.json"
-          # Optional: Override instanceSelector for this specific dashboard
-          # instanceSelector:
-          #   matchLabels:
-          #     dashboards: "specific-grafana"
-          # Optional: Folder assignment
-          # folder: "Application Dashboards"
-          # folderUID: "app-dashboards-uid"
-          # folderRef: "grafana-folder-resource"
+          instanceSelector:
+            matchLabels:
+              dashboards: "grafana"
 # ----------------------------------------------------------------------------
 # Service Account
 # ----------------------------------------------------------------------------

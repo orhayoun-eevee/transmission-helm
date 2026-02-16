@@ -6,18 +6,17 @@ metadata:
   name: transmission-default
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "network-policy"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/chart: transmission-0.0.7
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/instance: transmission
       app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
   policyTypes:
     - Ingress
     - Egress
@@ -95,11 +94,12 @@ metadata:
   name: transmission
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: serviceaccount
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "serviceaccount"
+    helm.sh/chart: transmission-0.0.7
   annotations:
     app.kubernetes.io/managed-by: argocd
     description: Transmission media center service account
@@ -112,11 +112,12 @@ metadata:
   name: transmission-config
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: pvc
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "pvc"
+    helm.sh/chart: transmission-0.0.7
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -134,11 +135,12 @@ metadata:
   name: transmission-http
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: service-http
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: service-http
+    helm.sh/chart: transmission-0.0.7
   annotations:
     description: Transmission HTTP service
 spec:
@@ -149,8 +151,8 @@ spec:
       targetPort: http
       protocol: TCP
   selector:
-    app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
+    app.kubernetes.io/instance: test-release
 ---
 # Source: transmission/templates/all.yaml
 apiVersion: v1
@@ -159,11 +161,12 @@ metadata:
   name: transmission-metrics
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: service-metrics
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: service-metrics
+    helm.sh/chart: transmission-0.0.7
   annotations:
     description: Transmission metrics service
 spec:
@@ -174,8 +177,8 @@ spec:
       targetPort: metrics
       protocol: TCP
   selector:
-    app.kubernetes.io/instance: transmission
     app.kubernetes.io/name: transmission
+    app.kubernetes.io/instance: test-release
 ---
 # Source: transmission/templates/all.yaml
 apiVersion: apps/v1
@@ -184,11 +187,12 @@ metadata:
   name: transmission
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: deployment
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "deployment"
+    helm.sh/chart: transmission-0.0.7
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -196,16 +200,17 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/instance: transmission
       app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
   template:
     metadata:
       labels:
-        app.kubernetes.io/instance: transmission
+        app.kubernetes.io/component: deployment
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: transmission
         app.kubernetes.io/version: 4.0.6
-        helm.sh/chart: transmission-0.0.4
-        app.kubernetes.io/component: download-client
+        helm.sh/chart: transmission-0.0.7
         app.kubernetes.io/part-of: download-clients
         logging.kubernetes.io/component: download-clients
         logging.kubernetes.io/service: transmission
@@ -324,7 +329,7 @@ spec:
               drop:
               - ALL
             privileged: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             runAsGroup: 1010
             runAsNonRoot: true
             runAsUser: 1011
@@ -402,22 +407,18 @@ spec:
             seccompProfile:
               type: RuntimeDefault
       volumes:
-        -
-          name: config
+        - name: config
           persistentVolumeClaim:
             claimName: transmission-config
-        -
-          name: downloads
+        - name: downloads
           nfs:
             path: /mnt/vol1/media-center/downloads
             server: snorlax.orhayoun.com
-        -
-          name: media
+        - name: media
           nfs:
             path: /mnt/vol1/media-center/media
             server: snorlax.orhayoun.com
-        -
-          emptyDir:
+        - emptyDir:
             sizeLimit: 1Gi
           name: watch
 ---
@@ -428,18 +429,17 @@ metadata:
   name: transmission-homeassistant
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: authorization-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "authorization-policy"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/chart: transmission-0.0.7
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: transmission
       app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
   action: ALLOW
   rules:
     - from:
@@ -458,18 +458,17 @@ metadata:
   name: transmission-ingress
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: authorization-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "authorization-policy"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/chart: transmission-0.0.7
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: transmission
       app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
   action: ALLOW
   rules:
     - from:
@@ -488,18 +487,17 @@ metadata:
   name: transmission-media-services
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: authorization-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "authorization-policy"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/chart: transmission-0.0.7
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: transmission
       app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
   action: ALLOW
   rules:
     - from:
@@ -519,18 +517,17 @@ metadata:
   name: transmission-prometheus
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: authorization-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "authorization-policy"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/chart: transmission-0.0.7
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: transmission
       app.kubernetes.io/name: transmission
+      app.kubernetes.io/instance: test-release
   action: ALLOW
   rules:
     - from:
@@ -543,36 +540,6 @@ spec:
           - "9100"
 ---
 # Source: transmission/templates/all.yaml
-apiVersion: networking.istio.io/v1beta1
-kind: DestinationRule
-metadata:
-  name: transmission
-  namespace: download-clients
-  labels:
-    app.kubernetes.io/instance: transmission
-    app.kubernetes.io/name: transmission
-    app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "destination-rule"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-spec:
-  host: transmission-http
-  trafficPolicy:
-    connectionPool:
-      http:
-        http1MaxPendingRequests: 10
-        http2MaxRequests: 100
-        maxRequestsPerConnection: 2
-      tcp:
-        maxConnections: 100
-    outlierDetection:
-      baseEjectionTime: 30s
-      consecutive5xxErrors: 5
-      interval: 30s
-      maxEjectionPercent: 50
----
-# Source: transmission/templates/all.yaml
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDashboard
 metadata:
@@ -580,11 +547,15 @@ metadata:
   namespace: download-clients
   labels:
     app.kubernetes.io/component: grafana-dashboard
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
+    helm.sh/chart: transmission-0.0.7
 spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
   json: |
     {"annotations":{"list":[{"builtIn":1,"datasource":{"type":"grafana","uid":"-- Grafana --"},"enable":true,"hide":true,"iconColor":"rgba(0, 211, 255, 1)","name":"Annotations \u0026 Alerts","type":"dashboard"}]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"liveNow":false,"panels":[{"collapsed":false,"gridPos":{"h":1,"w":24,"x":0,"y":0},"id":99,"panels":[],"title":"Application Health","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[{"options":{"0":{"color":"red","text":"Unhealthy"},"1":{"color":"green","text":"Healthy"}},"type":"value"}],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":18,"y":60},"id":12,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_version{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"System Status","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":6,"y":56},"id":13,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_torrents_active{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Active Torrents","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":0,"y":56},"id":14,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_torrents_total{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Total Torrents","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":4,"w":6,"x":12,"y":56},"id":15,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_download_speed_bytes{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Download Speed","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":4,"w":6,"x":18,"y":56},"id":16,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_upload_speed_bytes{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Upload Speed","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":0,"y":60},"id":17,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_torrents_paused{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Torrents Paused","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":6,"y":60},"id":1003,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_torrents_active{service=\"$service\", component=\"$component\"} - transmission_session_stats_torrents_paused{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Torrents Active (Not Paused)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":5},{"color":"red","value":10}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":6,"y":42},"id":35,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_queue_down{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Stalled Queue Items","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":12,"y":42},"id":36,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_torrents_downloading{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Torrents Downloading","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":18,"y":42},"id":37,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_torrents_seeding{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Torrents Seeding","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":5},{"color":"red","value":10}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":0,"y":46},"id":38,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_queue_up{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Stalled Upload Queue","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":107374182400},{"color":"red","value":10737418240}]},"unit":"bytes"}},"gridPos":{"h":4,"w":6,"x":0,"y":64},"id":1005,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_free_space{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Free Disk Space","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"bytes"}},"gridPos":{"h":4,"w":6,"x":6,"y":64},"id":1006,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_cache_size_bytes{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Cache Size","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":12,"y":64},"id":24,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_global_peer_limit{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Global Peer Limit","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":18,"y":64},"id":1007,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_torrent_peer_limit{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Per-Torrent Peer Limit","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":8,"w":12,"x":0,"y":13},"id":1004,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_download_speed_bytes{service=\"$service\", component=\"$component\"}","legendFormat":"Download Speed","refId":"A"}],"title":"Download Speed Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":4,"w":6,"x":12,"y":60},"id":20,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_upload_speed_bytes{service=\"$service\", component=\"$component\"}","legendFormat":"Upload Speed","refId":"A"}],"title":"Upload Speed Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":8,"w":12,"x":0,"y":21},"id":21,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_torrents_active{service=\"$service\", component=\"$component\"}","legendFormat":"Active Torrents","refId":"A"}],"title":"Active Torrents Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"bytes"}},"gridPos":{"h":8,"w":12,"x":12,"y":21},"id":26,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"increase(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"current\"}[5m])","legendFormat":"Downloaded (5m)","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}","legendFormat":"Total Downloaded","refId":"B"}],"title":"Downloaded Bytes Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"bytes"}},"gridPos":{"h":8,"w":12,"x":0,"y":29},"id":27,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"increase(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"current\"}[5m])","legendFormat":"Uploaded (5m)","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}","legendFormat":"Total Uploaded","refId":"B"}],"title":"Uploaded Bytes Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"bytes"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":0,"y":37},"id":132,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[7d]))","refId":"A"}],"title":"Downloaded Bytes (7d)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"bytes"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":6,"y":37},"id":133,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[30d]))","refId":"A"}],"title":"Downloaded Bytes (30d)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"bytes"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":12,"y":37},"id":134,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[7d]))","refId":"A"}],"title":"Uploaded Bytes (7d)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"bytes"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":18,"y":37},"id":135,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[30d]))","refId":"A"}],"title":"Uploaded Bytes (30d)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"bytes"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":0,"y":41},"id":136,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"delta(transmission_session_stats_downloaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[24h])","refId":"A"}],"title":"Downloaded Bytes Δ (24h)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"bytes"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":6,"y":41},"id":137,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"delta(transmission_session_stats_uploaded_bytes{service=\"$service\", component=\"$component\", type=\"cumulative\"}[24h])","refId":"A"}],"title":"Uploaded Bytes Δ (24h)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":8,"w":12,"x":0,"y":45},"id":138,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_torrents_downloading{service=\"$service\", component=\"$component\"}","legendFormat":"Torrents Downloading","refId":"A"}],"title":"Torrents Downloading Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":8,"w":12,"x":12,"y":45},"id":139,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_torrents_seeding{service=\"$service\", component=\"$component\"}","legendFormat":"Torrents Seeding","refId":"A"}],"title":"Torrents Seeding Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":8,"w":12,"x":0,"y":53},"id":140,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_queue_down{service=\"$service\", component=\"$component\"}","legendFormat":"Download Queue","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_queue_up{service=\"$service\", component=\"$component\"}","legendFormat":"Upload Queue","refId":"B"}],"title":"Queue Size Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"bytes"}},"gridPos":{"h":8,"w":12,"x":12,"y":29},"id":28,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_free_space{service=\"$service\", component=\"$component\"}","legendFormat":"Free Space","refId":"A"}],"title":"Free Space Over Time","type":"timeseries"},{"collapsed":false,"gridPos":{"h":1,"w":24,"x":0,"y":37},"id":101,"panels":[],"title":"Application Metrics","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[{"options":{"0":{"color":"red","text":"Down"},"1":{"color":"green","text":"Up"}},"type":"value"}],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":0,"y":22},"id":5,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"kube_deployment_status_replicas_available{deployment=\"$service\", namespace=\"download-clients\"}","refId":"A"}],"title":"Pod Availability","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":0.1},{"color":"red","value":1}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":18,"y":22},"id":19,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\", response_code=~\"5..\"}[5m])) / sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))) * 100","refId":"A"}],"title":"Error Rate","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"reqps"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":0,"y":26},"id":18,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))","refId":"A"}],"title":"Request Rate","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[{"options":{"0":{"color":"red","text":"Down"},"1":{"color":"green","text":"Up"}},"type":"value"}],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":6,"y":22},"id":6,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(up{job=~\".*$service.*\"} * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}) by (namespace)","refId":"A"}],"title":"Web Interface Status","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":2},{"color":"red","value":5}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":12,"y":22},"id":7,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(kube_pod_container_status_restarts_total{pod=~\"$service-.*\", namespace=\"download-clients\"}[1h]) * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}) by (namespace)","refId":"A"}],"title":"Pod Restarts (1h)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[{"options":{"0":{"color":"red","text":"Down"},"1":{"color":"green","text":"Up"}},"type":"value"}],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":6,"y":26},"id":23,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"kube_pod_container_status_ready{container=\"transmission-exporter\", pod=~\"$service-.*\", namespace=\"download-clients\"}","refId":"A"}],"title":"Exporter Container Status","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[{"options":{"0":{"color":"red","text":"Down"},"1":{"color":"green","text":"Up"}},"type":"value"}],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":12,"y":26},"id":25,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"count(transmission_version{service=\"$service\", component=\"$component\"}) \u003e 0","refId":"A"}],"title":"Exporter Metrics Endpoint Status","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":8,"w":12,"x":12,"y":30},"id":1008,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"kube_pod_container_status_ready{container=\"transmission-exporter\", pod=~\"$service-.*\", namespace=\"download-clients\"}","legendFormat":"Transmission Exporter Ready","refId":"A"}],"title":"Exporter Container Status Over Time","type":"timeseries"},{"collapsed":true,"gridPos":{"h":1,"w":24,"x":0,"y":38},"id":1002,"panels":[],"title":"Performance \u0026 Observability","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"ms"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":39},"id":22,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m])) by (le))","legendFormat":"p95 Response Time","refId":"A"}],"title":"Response Time (p95)","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"reqps"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":39},"id":130,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))","legendFormat":"Request Rate (req/s)","refId":"A"}],"title":"Request Rate Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"s"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":0,"y":47},"id":124,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"max(scrape_duration_seconds{job=\"transmission-metrics\"})","refId":"A"}],"title":"Scrape Duration (prom)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":6,"y":47},"id":125,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"max(scrape_samples_scraped{job=\"transmission-metrics\"})","refId":"A"}],"title":"Samples Scraped (prom)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"},"overrides":[]},"gridPos":{"h":4,"w":24,"x":0,"y":51},"id":126,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"max(scrape_series_added{job=\"transmission-metrics\"})","refId":"A"}],"title":"scrape_series_added (prom)","type":"stat"},{"collapsed":false,"gridPos":{"h":1,"w":24,"x":0,"y":55},"id":1001,"panels":[],"title":"Torrent Metrics","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":4,"w":6,"x":0,"y":68},"id":29,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_speed_limit_down_bytes{service=\"$service\", component=\"$component\", enabled=\"1\"}","refId":"A"}],"title":"Download Speed Limit","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":4,"w":6,"x":6,"y":68},"id":30,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_speed_limit_up_bytes{service=\"$service\", component=\"$component\", enabled=\"1\"}","refId":"A"}],"title":"Upload Speed Limit","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":12,"y":68},"id":31,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_queue_down{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Download Queue Limit","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"}},"gridPos":{"h":4,"w":6,"x":18,"y":68},"id":32,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_queue_up{service=\"$service\", component=\"$component\"}","refId":"A"}],"title":"Upload Queue Limit","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":4,"w":6,"x":0,"y":72},"id":33,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_alt_speed_down{service=\"$service\", component=\"$component\", enabled=\"1\"}","refId":"A"}],"title":"Alt Speed Down","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"}},"gridPos":{"h":4,"w":6,"x":6,"y":72},"id":34,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"transmission_alt_speed_up{service=\"$service\", component=\"$component\", enabled=\"1\"}","refId":"A"}],"title":"Alt Speed Up","type":"stat"},{"collapsed":true,"gridPos":{"h":1,"w":24,"x":0,"y":77},"id":100,"panels":[],"title":"Resource Utilization","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"max":100,"min":0,"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":85}]},"unit":"percent"}},"gridPos":{"h":4,"w":6,"x":0,"y":69},"id":1,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(rate(container_cpu_usage_seconds_total{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}[5m]) / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}","refId":"A"}],"title":"CPU Usage","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"max":100,"min":0,"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":85}]},"unit":"percent"}},"gridPos":{"h":4,"w":6,"x":6,"y":69},"id":2,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(container_memory_working_set_bytes{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}","refId":"A"}],"title":"Memory Usage","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"percent"}},"gridPos":{"h":8,"w":12,"x":0,"y":73},"id":3,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(rate(container_cpu_usage_seconds_total{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}[5m]) / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}","legendFormat":"CPU Usage - {{pod}}","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"max((kube_pod_container_resource_requests{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"cpu\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100) by (namespace, container)","legendFormat":"CPU Request","refId":"B"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"100","legendFormat":"CPU Limit","refId":"C"}],"title":"CPU Usage Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"percent"}},"gridPos":{"h":8,"w":12,"x":12,"y":73},"id":4,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(container_memory_working_set_bytes{pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100 * on(pod, namespace) group_left() kube_pod_info{pod=~\"$service-.*\", namespace=\"download-clients\"}","legendFormat":"Memory Usage - {{pod}}","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"max((kube_pod_container_resource_requests{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource=\"memory\", pod=~\"$service-.*\", container=\"$service\", namespace=\"download-clients\"}) * 100) by (namespace, container)","legendFormat":"Memory Request","refId":"B"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"100","legendFormat":"Memory Limit","refId":"C"}],"title":"Memory Usage Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":8,"w":6,"x":12,"y":81},"id":119,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"100 * sum(rate(container_cpu_cfs_throttled_periods_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m])) / sum(rate(container_cpu_cfs_periods_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m]))","legendFormat":"throttling_pct","refId":"A"}],"title":"CPU Throttling %","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":6,"x":18,"y":81},"id":120,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(container_oom_events_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[1h]))","refId":"A"}],"title":"OOM Events (1h)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":89},"id":122,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_fs_reads_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m]))","legendFormat":"read","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_fs_writes_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\",container=\"$service\"}[5m]))","legendFormat":"write","refId":"B"}],"title":"Filesystem IO (bytes/s)","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"Bps"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":89},"id":114,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_network_receive_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))","legendFormat":"rx","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_network_transmit_bytes_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))","legendFormat":"tx","refId":"B"}],"title":"Network Throughput (bytes/s)","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"max":100,"min":0,"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":80}]},"unit":"percent"}},"gridPos":{"h":4,"w":6,"x":0,"y":97},"id":8,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~\"$service-config.*\", namespace=\"download-clients\"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~\"$service-config.*\", namespace=\"download-clients\"}) * 100","refId":"A"}],"title":"Config PVC Usage","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":6,"y":97},"id":121,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(kubelet_volume_stats_inodes_used{namespace=\"download-clients\",persistentvolumeclaim=~\"$service-config.*\"} / kubelet_volume_stats_inodes{namespace=\"download-clients\",persistentvolumeclaim=~\"$service-config.*\"}) * 100","refId":"A"}],"title":"Config PVC Inode Usage (%)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"max":100,"min":0,"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":20},{"color":"red","value":10}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":4,"w":6,"x":12,"y":97},"id":127,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~\"^transmission-config$\", namespace=\"download-clients\"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~\"^transmission-config$\", namespace=\"download-clients\"}) * 100","refId":"A"}],"title":"Config PVC Available (%)","type":"stat"},{"collapsed":true,"gridPos":{"h":1,"w":24,"x":0,"y":106},"id":103,"panels":[],"title":"Networking \u0026 Additional Monitoring","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"reqps"}},"gridPos":{"h":8,"w":12,"x":0,"y":107},"id":9,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))","legendFormat":"Request Rate","refId":"A"}],"title":"Request Rate Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"percent"}},"gridPos":{"h":8,"w":12,"x":12,"y":107},"id":10,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\", response_code=~\"5..\"}[5m])) / sum(rate(istio_requests_total{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m]))) * 100","legendFormat":"Error Rate","refId":"A"}],"title":"Error Rate Over Time","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":24,"x":0,"y":115},"id":123,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_network_receive_errors_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))","legendFormat":"rx_err","refId":"A"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_network_transmit_errors_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))","legendFormat":"tx_err","refId":"B"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_network_receive_packets_dropped_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))","legendFormat":"rx_drop","refId":"C"},{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_network_transmit_packets_dropped_total{namespace=\"download-clients\",pod=~\"$service-.*\"}[5m]))","legendFormat":"tx_drop","refId":"D"}],"title":"Network Errors/Drops (5m rate)","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"ms"}},"gridPos":{"h":8,"w":12,"x":0,"y":123},"id":11,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\", destination_service_namespace=\"download-clients\"}[5m])) by (le))","legendFormat":"p95 Response Time","refId":"A"}],"title":"Response Time (p95)","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"custom":{"align":"auto","cellOptions":{"type":"auto"},"inspect":false},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":2}]},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":12,"y":123},"id":1009,"options":{"cellHeight":"sm","footer":{"countRows":false,"fields":"","reducer":["sum"],"show":false},"showHeader":true,"sortBy":[{"desc":true,"displayName":"Value"}]},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"kube_pod_container_status_waiting_reason{namespace=\"download-clients\",pod=~\"transmission-.*\"}","format":"table","instant":true,"refId":"A"}],"title":"Container Waiting Reasons","transformations":[{"id":"organize","options":{"excludeByName":{"__name__":true,"component":true,"service":true,"url":true,"wikiurl":true},"indexByName":{"Message":2,"Source":1,"Type":0,"Value":3},"renameByName":{"Value":"Value","message":"Message","source":"Source","type":"Type"}}}],"type":"table"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"custom":{"align":"auto","cellOptions":{"type":"auto"},"inspect":false},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":2}]},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":0,"y":131},"id":128,"options":{"cellHeight":"sm","footer":{"countRows":false,"fields":"","reducer":["sum"],"show":false},"showHeader":true,"sortBy":[{"desc":true,"displayName":"Value"}]},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"kube_pod_container_status_terminated_reason{namespace=\"download-clients\",pod=~\"transmission-.*\"}","format":"table","instant":true,"refId":"A"}],"title":"Container Terminated Reasons","transformations":[{"id":"organize","options":{"excludeByName":{"__name__":true,"component":true,"service":true,"url":true,"wikiurl":true},"indexByName":{"Message":2,"Source":1,"Type":0,"Value":3},"renameByName":{"Value":"Value","message":"Message","source":"Source","type":"Type"}}}],"type":"table"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"custom":{"align":"auto","cellOptions":{"type":"auto"},"inspect":false},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":2}]},"unit":"short"},"overrides":[]},"gridPos":{"h":8,"w":24,"x":0,"y":139},"id":129,"options":{"cellHeight":"sm","footer":{"countRows":false,"fields":"","reducer":["sum"],"show":false},"showHeader":true,"sortBy":[{"desc":true,"displayName":"Value"}]},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"kube_pod_container_status_last_terminated_exitcode{namespace=\"download-clients\",pod=~\"transmission-.*\"}","format":"table","instant":true,"refId":"A"}],"title":"Last Terminated Exit Code","transformations":[{"id":"organize","options":{"excludeByName":{"__name__":true,"component":true,"service":true,"url":true,"wikiurl":true},"indexByName":{"Message":2,"Source":1,"Type":0,"Value":3},"renameByName":{"Value":"Value","message":"Message","source":"Source","type":"Type"}}}],"type":"table"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":2}]},"unit":"short"},"overrides":[]},"gridPos":{"h":4,"w":24,"x":0,"y":147},"id":131,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(kube_pod_container_status_restarts_total{container=\"transmission-exporter\", pod=~\"transmission-.*\", namespace=\"download-clients\"}[1h]))","refId":"A"}],"title":"Exporter Restarts (1h)","type":"stat"}],"refresh":"30s","schemaVersion":38,"style":"dark","tags":["transmission","download-clients","monitoring"],"templating":{"list":[{"hide":0,"label":"Service","name":"service","query":"transmission","skipUrlSync":false,"type":"constant"},{"hide":0,"label":"Component","name":"component","query":"download-clients","skipUrlSync":false,"type":"constant"}]},"time":{"from":"now-6h","to":"now"},"timepicker":{},"timezone":"","title":"Transmission - Download Clients","uid":"transmission-download-clients","version":1,"weekStart":""}
   allowCrossNamespaceImport: true
@@ -596,13 +567,12 @@ metadata:
   name: transmission-route
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: http-route
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "http-route"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/chart: transmission-0.0.7
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -632,13 +602,12 @@ metadata:
   name: transmission-http-redirect
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: http-route
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "http-route"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/chart: transmission-0.0.7
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -667,12 +636,12 @@ metadata:
   name: transmission
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: prometheus-rule
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "prometheus-rule"
-
+    helm.sh/chart: transmission-0.0.7
 spec:
   groups:
     - name: transmission.rules
@@ -694,10 +663,22 @@ spec:
               more than 5 minutes.
             runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
             summary: Transmission high memory usage
-          expr: (container_memory_working_set_bytes{pod=~"transmission-.*", container="transmission",
-            namespace="download-clients"} / on(pod, container, namespace) kube_pod_container_resource_limits{resource="memory",
-            pod=~"transmission-.*", container="transmission", namespace="download-clients"})
-            * 100 > 85
+          expr: |
+            (
+              container_memory_working_set_bytes{
+                pod=~"transmission-.*",
+                container="transmission",
+                namespace="download-clients"
+              }
+              /
+              on(pod, container, namespace)
+              kube_pod_container_resource_limits{
+                resource="memory",
+                pod=~"transmission-.*",
+                container="transmission",
+                namespace="download-clients"
+              }
+            ) * 100 > 85
           for: 5m
           labels:
             component: download-clients
@@ -709,10 +690,22 @@ spec:
               than 5 minutes.
             runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
             summary: Transmission high CPU usage
-          expr: (rate(container_cpu_usage_seconds_total{pod=~"transmission-.*", container="transmission",
-            namespace="download-clients"}[5m]) / on(pod, container, namespace) kube_pod_container_resource_limits{resource="cpu",
-            pod=~"transmission-.*", container="transmission", namespace="download-clients"})
-            * 100 > 80
+          expr: |
+            (
+              rate(container_cpu_usage_seconds_total{
+                pod=~"transmission-.*",
+                container="transmission",
+                namespace="download-clients"
+              }[5m])
+              /
+              on(pod, container, namespace)
+              kube_pod_container_resource_limits{
+                resource="cpu",
+                pod=~"transmission-.*",
+                container="transmission",
+                namespace="download-clients"
+              }
+            ) * 100 > 80
           for: 5m
           labels:
             component: download-clients
@@ -724,9 +717,14 @@ spec:
               space available.
             runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
             summary: NFS downloads storage critically low
-          expr: up{job="transmission"} == 1 and on() (node_filesystem_avail_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"}
-            / node_filesystem_size_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"})
-            * 100 < 10
+          expr: |
+            up{job="transmission"} == 1
+            and on()
+            (
+              node_filesystem_avail_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"}
+              /
+              node_filesystem_size_bytes{mountpoint=~"/mnt/vol1/media-center/downloads.*"}
+            ) * 100 < 10
           for: 5m
           labels:
             component: download-clients
@@ -739,9 +737,16 @@ spec:
               for more than 10 minutes.
             runbook_url: https://github.com/orHayoun/eevee/blob/main/services/transmission/README.md#troubleshooting
             summary: Transmission high disk I/O
-          expr: rate(container_fs_reads_bytes_total{pod=~"transmission-.*", namespace="download-clients"}[5m])
-            + rate(container_fs_writes_bytes_total{pod=~"transmission-.*", namespace="download-clients"}[5m])
-            > 50000000
+          expr: |
+            rate(container_fs_reads_bytes_total{
+              pod=~"transmission-.*",
+              namespace="download-clients"
+            }[5m])
+            +
+            rate(container_fs_writes_bytes_total{
+              pod=~"transmission-.*",
+              namespace="download-clients"
+            }[5m]) > 50000000  # 50MB/s
           for: 10m
           labels:
             component: download-clients
@@ -808,17 +813,15 @@ metadata:
   name: transmission
   namespace: download-clients
   labels:
-    app.kubernetes.io/instance: transmission
+    app.kubernetes.io/component: servicemonitor
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.4
-    app.kubernetes.io/component: "servicemonitor"
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    helm.sh/chart: transmission-0.0.7
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/component: service-metrics
       app.kubernetes.io/instance: transmission
       app.kubernetes.io/name: transmission
   namespaceSelector:
