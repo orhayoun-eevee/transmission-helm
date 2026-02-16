@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.7
+    helm.sh/chart: transmission-0.0.8
 spec:
   podSelector:
     matchLabels:
@@ -99,7 +99,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.7
+    helm.sh/chart: transmission-0.0.8
   annotations:
     app.kubernetes.io/managed-by: argocd
     description: Transmission media center service account
@@ -117,7 +117,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.7
+    helm.sh/chart: transmission-0.0.8
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -140,7 +140,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.7
+    helm.sh/chart: transmission-0.0.8
   annotations:
     description: Transmission HTTP service
 spec:
@@ -166,7 +166,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.7
+    helm.sh/chart: transmission-0.0.8
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -184,7 +184,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: transmission
         app.kubernetes.io/version: 4.0.6
-        helm.sh/chart: transmission-0.0.7
+        helm.sh/chart: transmission-0.0.8
         app.kubernetes.io/part-of: download-clients
         logging.kubernetes.io/component: download-clients
         logging.kubernetes.io/service: transmission
