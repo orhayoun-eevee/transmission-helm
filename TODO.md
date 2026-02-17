@@ -1,6 +1,6 @@
-# Transmission Chart TODO
+# Transmission Chart Operational Notes
 
 ## Connectivity & Networking
 
-- [ ] Check on connectivity for p2p (peer-to-peer)
-  - May need to install proxy gateway or something else to allow Transmission to connect to the world through a safe hop
+- Peer-to-peer egress policy must be validated in each target cluster before production rollout.
+- If outbound peer discovery is restricted, route Transmission through an approved egress gateway/proxy and document the selected path in environment-specific values.
