@@ -22,6 +22,12 @@ tests:
         equal:
           path: kind
           value: ServiceMonitor
+      - documentSelector:
+          path: kind
+          value: DestinationRule
+        equal:
+          path: spec.host
+          value: transmission-http
 
   - it: wires transmission application container security and storage correctly
     asserts:
