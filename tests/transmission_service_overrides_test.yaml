@@ -1,0 +1,78 @@
+suite: transmission service and networking overrides
+templates:
+  - templates/all.yaml
+tests:
+  - it: applies http service type override
+    set:
+      network:
+        services:
+          items:
+            http:
+              type: NodePort
+    asserts:
+      - documentSelector:
+          path: metadata.name
+          value: transmission-http
+        equal:
+          path: spec.type
+          value: NodePort
+
+  - it: applies http service port override
+    set:
+      network:
+        services:
+          items:
+            http:
+              ports:
+                http:
+                  port: 8181
+    asserts:
+      - documentSelector:
+          path: metadata.name
+          value: transmission-http
+        equal:
+          path: spec.ports[0].port
+          value: 8181
+
+  - it: applies metrics service port override
+    set:
+      network:
+        services:
+          items:
+            metrics:
+              ports:
+                metrics:
+                  port: 9200
+    asserts:
+      - documentSelector:
+          path: metadata.name
+          value: transmission-metrics
+        equal:
+          path: spec.ports[0].port
+          value: 9200
+
+  - it: applies http route host override in dedicated suite
+    set:
+      network:
+        httpRoute:
+          host: transmission.override.internal
+    asserts:
+      - documentSelector:
+          path: metadata.name
+          value: transmission-route
+        equal:
+          path: spec.hostnames[0]
+          value: transmission.override.internal
+
+  - it: applies serviceMonitor interval override
+    set:
+      metrics:
+        serviceMonitor:
+          interval: 30s
+    asserts:
+      - documentSelector:
+          path: kind
+          value: ServiceMonitor
+        equal:
+          path: spec.endpoints[0].interval
+          value: 30s
