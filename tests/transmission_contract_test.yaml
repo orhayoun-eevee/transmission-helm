@@ -142,3 +142,17 @@ tests:
     asserts:
       - hasDocuments:
           count: 15
+
+  - it: applies explicit transmission image override for controlled rollouts
+    set:
+      deployment:
+        containers:
+          transmission:
+            image:
+              repository: registry.internal/transmission
+              tag: ci-test
+    asserts:
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].image
+          value: registry.internal/transmission:ci-test
