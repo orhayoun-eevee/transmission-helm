@@ -1,0 +1,3 @@
+skip-check:
+  - CKV_K8S_40 # Transmission requires fixed PUID/PGID for host volume compatibility.
+  - CKV_K8S_35 # Transmission intentionally exposes torrent ports via Service.
