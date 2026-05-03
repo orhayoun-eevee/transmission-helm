@@ -245,243 +245,245 @@ network:
           maxEjectionPercent: 50
 
 # ----------------------------------------------------------------------------
-# Deployment Configuration
+# Workload Configuration
 # ----------------------------------------------------------------------------
-deployment:
-  replicas: 1
-  strategy:
-    type: Recreate
-  revisionHistoryLimit: 3
-  terminationGracePeriodSeconds: 60
-  dnsPolicy: ClusterFirst
-  enableServiceLinks: false
-  automountServiceAccountToken: false
+workload:
+  type: deployment
+  spec:
+    replicas: 1
+    strategy:
+      type: Recreate
+    revisionHistoryLimit: 3
+    terminationGracePeriodSeconds: 60
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: false
+    automountServiceAccountToken: false
 
-  # Pod labels
-  podLabels:
-    app.kubernetes.io/part-of: download-clients
-    logging.kubernetes.io/component: download-clients
-    logging.kubernetes.io/service: transmission
+    # Pod labels
+    podLabels:
+      app.kubernetes.io/part-of: download-clients
+      logging.kubernetes.io/component: download-clients
+      logging.kubernetes.io/service: transmission
 
-  # Pod security context
-  podSecurityContext:
-    fsGroup: 1010
-    fsGroupChangePolicy: OnRootMismatch
-    runAsNonRoot: true
-    supplementalGroups: []
+    # Pod security context
+    podSecurityContext:
+      fsGroup: 1010
+      fsGroupChangePolicy: OnRootMismatch
+      runAsNonRoot: true
+      supplementalGroups: []
 
-  # Main container configuration
-  containers:
-    transmission:
-      enabled: true
-      image:
-        repository: ghcr.io/runlix/transmission
-        tag: "release-4.0.6-latest@sha256:dc5948e80732d5dbc2ce4a9ed19a07c822de6348926833798c52c63be81af747"
-        pullPolicy: IfNotPresent
+    # Main container configuration
+    containers:
+      transmission:
+        enabled: true
+        image:
+          repository: ghcr.io/runlix/transmission
+          tag: "release-4.0.6-latest@sha256:dc5948e80732d5dbc2ce4a9ed19a07c822de6348926833798c52c63be81af747"
+          pullPolicy: IfNotPresent
 
-      env:
-        - name: TZ
-          value: "UTC"
-        - name: TRANSMISSION_WEB_HOME
-          value: "/usr/share/transmission/public_html"
-        - name: USER
-          value: "admin"
-        - name: TRANSMISSION_RPC_ENABLED
-          value: "true"
-        - name: TRANSMISSION_RPC_BIND_ADDRESS
-          value: "0.0.0.0"
-        - name: TRANSMISSION_RPC_PORT
-          value: "8080"
-        - name: TRANSMISSION_RPC_WHITELIST_ENABLED
-          value: "false"
-        - name: TRANSMISSION_RPC_HOST_WHITELIST_ENABLED
-          value: "false"
-        - name: TRANSMISSION_DOWNLOAD_DIR
-          value: "/downloads/complete"
-        - name: TRANSMISSION_INCOMPLETE_DIR_ENABLED
-          value: "true"
-        - name: TRANSMISSION_INCOMPLETE_DIR
-          value: "/downloads/incomplete"
-        - name: TRANSMISSION_WATCH_DIR_ENABLED
-          value: "true"
-        - name: TRANSMISSION_WATCH_DIR
-          value: "/watch"
-        - name: TRANSMISSION_PEER_LIMIT_GLOBAL
-          value: "200"
-        - name: TRANSMISSION_PEER_LIMIT_PER_TORRENT
-          value: "50"
-        - name: TRANSMISSION_SPEED_LIMIT_UP_ENABLED
-          value: "false"
-        - name: TRANSMISSION_SPEED_LIMIT_DOWN_ENABLED
-          value: "false"
-        - name: TRANSMISSION_BLOCKLIST_ENABLED
-          value: "false"
-        - name: TRANSMISSION_DHT_ENABLED
-          value: "true"
-        - name: TRANSMISSION_PEX_ENABLED
-          value: "true"
-        - name: TRANSMISSION_LPD_ENABLED
-          value: "false"
+        env:
+          - name: TZ
+            value: "UTC"
+          - name: TRANSMISSION_WEB_HOME
+            value: "/usr/share/transmission/public_html"
+          - name: USER
+            value: "admin"
+          - name: TRANSMISSION_RPC_ENABLED
+            value: "true"
+          - name: TRANSMISSION_RPC_BIND_ADDRESS
+            value: "0.0.0.0"
+          - name: TRANSMISSION_RPC_PORT
+            value: "8080"
+          - name: TRANSMISSION_RPC_WHITELIST_ENABLED
+            value: "false"
+          - name: TRANSMISSION_RPC_HOST_WHITELIST_ENABLED
+            value: "false"
+          - name: TRANSMISSION_DOWNLOAD_DIR
+            value: "/downloads/complete"
+          - name: TRANSMISSION_INCOMPLETE_DIR_ENABLED
+            value: "true"
+          - name: TRANSMISSION_INCOMPLETE_DIR
+            value: "/downloads/incomplete"
+          - name: TRANSMISSION_WATCH_DIR_ENABLED
+            value: "true"
+          - name: TRANSMISSION_WATCH_DIR
+            value: "/watch"
+          - name: TRANSMISSION_PEER_LIMIT_GLOBAL
+            value: "200"
+          - name: TRANSMISSION_PEER_LIMIT_PER_TORRENT
+            value: "50"
+          - name: TRANSMISSION_SPEED_LIMIT_UP_ENABLED
+            value: "false"
+          - name: TRANSMISSION_SPEED_LIMIT_DOWN_ENABLED
+            value: "false"
+          - name: TRANSMISSION_BLOCKLIST_ENABLED
+            value: "false"
+          - name: TRANSMISSION_DHT_ENABLED
+            value: "true"
+          - name: TRANSMISSION_PEX_ENABLED
+            value: "true"
+          - name: TRANSMISSION_LPD_ENABLED
+            value: "false"
 
-      envFrom:
-        - secretRef:
-            name: transmission-secrets
-
-      ports:
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-
-      volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: downloads
-          mountPath: /downloads
-        - name: media
-          mountPath: /media
-        - name: watch
-          mountPath: /watch
-
-      # Health Probes (TCP Socket for distroless image)
-      livenessProbe:
-        tcpSocket:
-          port: http
-        failureThreshold: 3
-        initialDelaySeconds: 30
-        periodSeconds: 30
-        successThreshold: 1
-        timeoutSeconds: 10
-
-      readinessProbe:
-        tcpSocket:
-          port: http
-        failureThreshold: 3
-        initialDelaySeconds: 15
-        periodSeconds: 10
-        successThreshold: 1
-        timeoutSeconds: 10
-
-      startupProbe:
-        tcpSocket:
-          port: http
-        failureThreshold: 30
-        initialDelaySeconds: 10
-        periodSeconds: 5
-        successThreshold: 1
-        timeoutSeconds: 10
-
-      # Container Security Context
-      securityContext:
-        readOnlyRootFilesystem: true
-        runAsNonRoot: true
-        runAsUser: 1011
-        runAsGroup: 1010
-        allowPrivilegeEscalation: false
-        privileged: false
-        appArmorProfile:
-          type: RuntimeDefault
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
-
-      # Resources
-      resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
-          ephemeral-storage: 2Gi
-        limits:
-          cpu: 1000m
-          memory: 1Gi
-          ephemeral-storage: 2Gi
-
-    # Metrics exporter container
-    transmission-exporter:
-      enabled: true
-      image:
-        repository: metalmatze/transmission-exporter
-        tag: "0.3.0@sha256:90d6acb6d47d717015eda05b8233e65e2236cbd2d56ceaf08411bbb964412c41"
-        pullPolicy: IfNotPresent
-
-      env:
-        - name: WEB_ADDR
-          value: ":9100"
-        - name: TRANSMISSION_ADDR
-          value: "http://localhost:8080"
-        - name: TRANSMISSION_USERNAME
-          value: "admin"
-        - name: TRANSMISSION_PASSWORD
-          valueFrom:
-            secretKeyRef:
+        envFrom:
+          - secretRef:
               name: transmission-secrets
-              key: PASS
 
-      ports:
-        - containerPort: 9100
-          name: metrics
-          protocol: TCP
+        ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
 
-      # Health Probes
-      livenessProbe:
-        httpGet:
-          path: /metrics
-          port: metrics
-          scheme: HTTP
-        initialDelaySeconds: 30
-        periodSeconds: 30
-        timeoutSeconds: 5
-        failureThreshold: 3
-        successThreshold: 1
+        volumeMounts:
+          - name: config
+            mountPath: /config
+          - name: downloads
+            mountPath: /downloads
+          - name: media
+            mountPath: /media
+          - name: watch
+            mountPath: /watch
 
-      readinessProbe:
-        httpGet:
-          path: /metrics
-          port: metrics
-          scheme: HTTP
-        initialDelaySeconds: 10
-        periodSeconds: 10
-        timeoutSeconds: 5
-        failureThreshold: 3
-        successThreshold: 1
+        # Health Probes (TCP Socket for distroless image)
+        livenessProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 10
 
-      startupProbe:
-        httpGet:
-          path: /metrics
-          port: metrics
-          scheme: HTTP
-        initialDelaySeconds: 45
-        periodSeconds: 10
-        timeoutSeconds: 10
-        failureThreshold: 30
-        successThreshold: 1
+        readinessProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
 
-      # Container Security Context
-      securityContext:
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        runAsNonRoot: true
-        runAsUser: 65534  # nobody user
-        runAsGroup: 65534
-        appArmorProfile:
-          type: RuntimeDefault
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
+        startupProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 30
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
 
-      # Resources
-      resources:
-        requests:
-          cpu: 10m
-          memory: 32Mi
-          ephemeral-storage: 100Mi
-        limits:
-          cpu: 100m
-          memory: 64Mi
-          ephemeral-storage: 100Mi
+        # Container Security Context
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1011
+          runAsGroup: 1010
+          allowPrivilegeEscalation: false
+          privileged: false
+          appArmorProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+
+        # Resources
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+            ephemeral-storage: 2Gi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+            ephemeral-storage: 2Gi
+
+      # Metrics exporter container
+      transmission-exporter:
+        enabled: true
+        image:
+          repository: metalmatze/transmission-exporter
+          tag: "0.3.0@sha256:90d6acb6d47d717015eda05b8233e65e2236cbd2d56ceaf08411bbb964412c41"
+          pullPolicy: IfNotPresent
+
+        env:
+          - name: WEB_ADDR
+            value: ":9100"
+          - name: TRANSMISSION_ADDR
+            value: "http://localhost:8080"
+          - name: TRANSMISSION_USERNAME
+            value: "admin"
+          - name: TRANSMISSION_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: transmission-secrets
+                key: PASS
+
+        ports:
+          - containerPort: 9100
+            name: metrics
+            protocol: TCP
+
+        # Health Probes
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+
+        startupProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 45
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 30
+          successThreshold: 1
+
+        # Container Security Context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534  # nobody user
+          runAsGroup: 65534
+          appArmorProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+
+        # Resources
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+            ephemeral-storage: 100Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+            ephemeral-storage: 100Mi
 
 # ----------------------------------------------------------------------------
 # Feature: Persistence
