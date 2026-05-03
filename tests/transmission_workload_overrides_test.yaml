@@ -2,10 +2,11 @@ suite: transmission workload overrides
 templates:
   - templates/all.yaml
 tests:
-  - it: applies deployment replica override
+  - it: applies workload replica override
     set:
-      deployment:
-        replicas: 2
+      workload:
+        spec:
+          replicas: 2
     asserts:
       - documentSelector:
           path: kind
@@ -16,9 +17,10 @@ tests:
 
   - it: applies pod security context fsGroup override
     set:
-      deployment:
-        podSecurityContext:
-          fsGroup: 2000
+      workload:
+        spec:
+          podSecurityContext:
+            fsGroup: 2000
     asserts:
       - documentSelector:
           path: kind

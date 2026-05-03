@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   podSelector:
     matchLabels:
@@ -99,7 +99,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
   annotations:
     app.kubernetes.io/managed-by: argocd
     description: Transmission media center service account
@@ -117,7 +117,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -140,7 +140,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
   annotations:
     description: Transmission HTTP service
 spec:
@@ -166,7 +166,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
   annotations:
     description: Transmission metrics service
 spec:
@@ -192,7 +192,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -210,11 +210,12 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: transmission
         app.kubernetes.io/version: 4.0.6
-        helm.sh/chart: transmission-0.0.8
+        helm.sh/chart: transmission-0.0.9
         app.kubernetes.io/part-of: download-clients
         logging.kubernetes.io/component: download-clients
         logging.kubernetes.io/service: transmission
     spec:
+      
       terminationGracePeriodSeconds: 60
       securityContext:
         fsGroup: 1010
@@ -434,7 +435,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   selector:
     matchLabels:
@@ -463,7 +464,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   selector:
     matchLabels:
@@ -492,7 +493,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   selector:
     matchLabels:
@@ -522,7 +523,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   selector:
     matchLabels:
@@ -551,7 +552,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   host: transmission-http
   trafficPolicy:
@@ -580,7 +581,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   instanceSelector:
     matchLabels:
@@ -602,7 +603,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -613,17 +614,16 @@ spec:
   hostnames:
     - transmission-k8s.orhayoun.com
   rules:
-    -
+    - backendRefs:
+      - group: ""
+        kind: Service
+        name: transmission-http
+        port: 8080
+        weight: 100
       matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - group: ""
-          kind: Service
-          name: transmission-http
-          port: 8080
-          weight: 100
+      - path:
+          type: PathPrefix
+          value: /
 ---
 # Source: transmission/templates/all.yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -637,7 +637,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -648,16 +648,15 @@ spec:
   hostnames:
     - transmission-k8s.orhayoun.com
   rules:
-    -
+    - filters:
+      - requestRedirect:
+          scheme: https
+          statusCode: 301
+        type: RequestRedirect
       matches:
-        - path:
-            type: PathPrefix
-            value: /
-      filters:
-        - requestRedirect:
-            scheme: https
-            statusCode: 301
-          type: RequestRedirect
+      - path:
+          type: PathPrefix
+          value: /
 ---
 # Source: transmission/templates/all.yaml
 apiVersion: monitoring.coreos.com/v1
@@ -671,7 +670,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   groups:
     - name: transmission.rules
@@ -848,7 +847,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: transmission
     app.kubernetes.io/version: 4.0.6
-    helm.sh/chart: transmission-0.0.8
+    helm.sh/chart: transmission-0.0.9
 spec:
   selector:
     matchLabels:
