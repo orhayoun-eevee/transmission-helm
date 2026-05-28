@@ -1,6 +1,6 @@
 # Transmission Helm Chart
 
-This chart deploys Transmission using the shared dependency `lib-chart` (`0.0.14`).
+This chart deploys Transmission using the shared dependency `lib-chart` (`0.0.15`).
 
 ## Installation
 
@@ -10,7 +10,7 @@ helm install transmission . --namespace download-clients
 
 ## Dependencies
 
-- `lib-chart` (`0.0.14`) from `oci://ghcr.io/orhayoun-eevee`
+- `lib-chart` (`0.0.15`) from `oci://ghcr.io/orhayoun-eevee`
 
 Update dependencies from chart root:
 
